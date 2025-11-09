@@ -15,12 +15,15 @@ public class SceneManager1 : MonoBehaviour
     }
     public void Quit()
     {
-        UnityEditor.EditorApplication.isPlaying = false;
-        Application.Quit();
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false; // Works only in the editor
+#else
+        Application.Quit(); // Works in builds
+#endif
     }
     public void LoadBack()
     {
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex-1);
     }
     public void Back()
     {

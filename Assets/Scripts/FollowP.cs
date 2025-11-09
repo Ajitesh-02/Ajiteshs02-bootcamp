@@ -12,10 +12,17 @@ public class Enemy : MonoBehaviour
     private PHealth playerHealth;
     private bool touchingPlayer = false;
 
+    // New: attack state bool (public for Animator or inspector debugging)
+    [SerializeField] private bool isAttack = false;
+
+    // Optional: reference to Animator
+    private Animator animator;
+
     void Start()
     {
-        player = GameObject.FindGameObjectWithTag("Player").transform;
+        player = GameObject.FindGameObjectWithTag("Player")?.transform;
         rb = GetComponent<Rigidbody2D>();
+        animator = GetComponent<Animator>();
 
         rb.gravityScale = 0;
         rb.freezeRotation = true;
@@ -30,20 +37,23 @@ public class Enemy : MonoBehaviour
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg - 90f;
         rb.rotation = angle;
 
-        // Stop moving when close enough
         float distance = Vector2.Distance(player.position, transform.position);
+
+        // If close enough, stop and attack; otherwise move
         if (distance > stopDistance && !touchingPlayer)
         {
-            Vector2 newPos = rb.position + direction * moveSpeed * Time.fixedDeltaTime;
-            rb.MovePosition(newPos);
+            rb.MovePosition(rb.position + direction * moveSpeed * Time.fixedDeltaTime);
+            rb.velocity = Vector2.zero;
+            SetAttackState(false);
         }
         else
         {
-            rb.velocity = Vector2.zero; // stay still when close
+            rb.velocity = Vector2.zero;
+            SetAttackState(true);
         }
 
-        // Deal damage while close
-        if (touchingPlayer && playerHealth != null)
+        // Deal damage if touching player
+        if (touchingPlayer && playerHealth != null && isAttack)
         {
             playerHealth.TakeDamage(damagePerSecond * Time.fixedDeltaTime);
         }
@@ -55,6 +65,7 @@ public class Enemy : MonoBehaviour
         {
             touchingPlayer = true;
             playerHealth = collision.gameObject.GetComponent<PHealth>();
+            SetAttackState(true);
         }
     }
 
@@ -63,6 +74,22 @@ public class Enemy : MonoBehaviour
         if (collision.gameObject.CompareTag("Player"))
         {
             touchingPlayer = false;
+            SetAttackState(false);
+        }
+    }
+
+    /// <summary>
+    /// Central method to update attack state and optionally trigger Animator
+    /// </summary>
+    private void SetAttackState(bool state)
+    {
+        if (isAttack == state) return; // skip redundant updates
+
+        isAttack = state;
+
+        if (animator != null)
+        {
+            animator.SetBool("isAttack", isAttack);
         }
     }
 }

@@ -9,23 +9,30 @@ public class Movement : MonoBehaviour
     [SerializeField] private GameObject bulletPrefab;
     [SerializeField] private float bulletSpeed = 15f;
     [SerializeField] private Transform firePoint;
+    [SerializeField] private AudioSource shootAudio; // Plays shooting sound
+    [SerializeField] private float shootAnimDuration = 0.15f; // how long the shooting anim flag stays true
 
-    // --- Changed ---
+    [Header("Audio Pitch Randomization")]
+    [SerializeField, Range(0.8f, 1.2f)] private float minPitch = 0.95f; // min random pitch
+    [SerializeField, Range(0.8f, 1.2f)] private float maxPitch = 1.05f; // max random pitch
+
     private Rigidbody2D rb;
-    private Vector2 moveDir; // Store input for FixedUpdate
+    private Vector2 moveDir;
+    private Animator animator;
+    private bool isShoot = false;
 
-    // --- Changed ---
     void Start()
     {
-        // Get the Rigidbody2D component on this player
         rb = GetComponent<Rigidbody2D>();
+        animator = GetComponent<Animator>();
+
+        if (shootAudio == null)
+            shootAudio = GetComponent<AudioSource>();
     }
 
     void Update()
     {
-        // --- Changed ---
-        // Get input in Update() for responsiveness, but store it for FixedUpdate
-        moveDir = Vector2.zero; // Use Vector2 for 2D
+        moveDir = Vector2.zero;
 
         if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow))
             moveDir += Vector2.left;
@@ -36,26 +43,19 @@ public class Movement : MonoBehaviour
         if (Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow))
             moveDir += Vector2.down;
 
-        // Normalize to prevent faster diagonal movement
         moveDir.Normalize();
 
-        // These are fine in Update()
         HandleRotation();
         HandleShooting();
     }
 
-    // --- Changed ---
     void FixedUpdate()
     {
-        // Apply physics movement in FixedUpdate
         HandleMovement();
     }
 
     void HandleMovement()
     {
-        // --- Changed ---
-        // This is the FIX: Use rb.MovePosition() for kinematic collisions
-        // Use Time.fixedDeltaTime inside FixedUpdate
         rb.MovePosition(rb.position + moveDir * moveSpeed * Time.fixedDeltaTime);
     }
 
@@ -71,11 +71,14 @@ public class Movement : MonoBehaviour
         transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
     }
 
-
     void HandleShooting()
     {
         if (Input.GetMouseButtonDown(0))
+        {
+            isShoot = true;
             Shoot();
+            StartCoroutine(ResetShootAnimation());
+        }
     }
 
     void Shoot()
@@ -92,5 +95,25 @@ public class Movement : MonoBehaviour
             rb.gravityScale = 0;
             rb.velocity = (firePoint ? firePoint.up : transform.up) * bulletSpeed;
         }
+
+        // Play shoot sound with random pitch variation
+        if (shootAudio != null)
+        {
+            shootAudio.pitch = Random.Range(minPitch, maxPitch);
+            shootAudio.Play();
+        }
+
+        // Trigger animation
+        if (animator != null)
+            animator.SetBool("isShoot", true);
+    }
+
+    IEnumerator ResetShootAnimation()
+    {
+        yield return new WaitForSeconds(shootAnimDuration);
+        isShoot = false;
+
+        if (animator != null)
+            animator.SetBool("isShoot", false);
     }
 }
