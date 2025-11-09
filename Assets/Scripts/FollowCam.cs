@@ -1,23 +1,22 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class FollowCam : MonoBehaviour
 {
     public Transform target;
     public Vector3 offset = new Vector3(0, 0, -10);
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
+    public float smoothSpeed = 5f;
 
-    // Update is called once per frame
     void LateUpdate()
     {
-        if(target != null)
+        if (target != null)
         {
-            transform.position = target.position+offset;
+            // Desired position based on target
+            Vector3 desiredPosition = target.position + offset;
+
+            // Smooth movement
+            Vector3 smoothedPosition = Vector3.Lerp(transform.position, desiredPosition, smoothSpeed * Time.deltaTime);
+
+            transform.position = smoothedPosition;
         }
     }
 }

@@ -45,8 +45,8 @@ public class PHealth : MonoBehaviour
     void Die()
     {
         Debug.Log("Player Died!");
-        Time.timeScale = 0f;
-
+        //Time.timeScale = 0f;
+        Destroy(gameObject);
         if (gameOverCanvas)
             gameOverCanvas.SetActive(true);
     }
